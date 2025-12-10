@@ -134,39 +134,26 @@ class T5TextEmbedder(nn.Module):
         self.tokenizer = T5Tokenizer.from_pretrained(pretrained_path)
         self.max_length = max_length
 
-    def forward(
-        self, caption, text_input_ids=None, attention_mask=None, max_length=None
-    ):
-        if max_length is None:
-            max_length = self.max_length
+    def tokenize(self, captions):
+        text_inputs = self.tokenizer(
+            captions,
+            return_tensors="pt",
+            add_special_tokens=True,
+            max_length=self.max_length,
+            padding="max_length",
+            truncation=True,
+        )
+        input_ids = text_inputs["input_ids"]
+        attention_mask = text_inputs["attention_mask"]
+        return input_ids, attention_mask
 
-        if text_input_ids is None or attention_mask is None:
-            if max_length is not None:
-                text_inputs = self.tokenizer(
-                    caption,
-                    return_tensors="pt",
-                    add_special_tokens=True,
-                    max_length=max_length,
-                    padding="max_length",
-                    truncation=True,
-                )
-            else:
-                text_inputs = self.tokenizer(
-                    caption, return_tensors="pt", add_special_tokens=True
-                )
-            text_input_ids = text_inputs.input_ids
-            attention_mask = text_inputs.attention_mask
-        text_input_ids = text_input_ids.to(self.model.device)
+    def forward(self, input_ids, attention_mask):
+        input_ids = input_ids.to(self.model.device)
         attention_mask = attention_mask.to(self.model.device)
-        outputs = self.model(text_input_ids, attention_mask=attention_mask)
+        outputs = self.model(input_ids, attention_mask=attention_mask)
 
         embeddings = outputs.last_hidden_state
-
-        list_embeddings = []
-        for i, embed in enumerate(embeddings.unbind(0)):
-            seq_len = attention_mask[i].sum()
-            list_embeddings.append(embed[:seq_len].unsqueeze(0))
-        return embeddings
+        return embeddings, attention_mask
 
 
 class ELLA(nn.Module):
@@ -222,6 +209,7 @@ class ELLA(nn.Module):
             text_encode_features, timestep_embedding=time_embedding
         )
         return encoder_hidden_states
+
 
 if __name__ == "__main__":
     from safetensors.torch import load_file

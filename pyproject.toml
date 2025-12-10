@@ -8,8 +8,12 @@ dependencies = [
     "datasets>=4.4.1",
     "diffusers>=0.36.0",
     "flash-linear-attention",
+    "prettytable>=3.17.0",
+    "ruff>=0.14.8",
+    "sentencepiece>=0.2.1",
     "torch>=2.9.1",
     "transformers>=4.57.3",
+    "wandb>=0.23.1",
 ]
 
 [tool.uv.sources]
